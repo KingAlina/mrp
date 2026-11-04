@@ -1,0 +1,82 @@
+@startuml
+
+class User {
+    - id: int
+    - username: String
+    - password: String
+
+    + getter()
+}
+
+class Media {
+    - id: int
+    - creatorId: int
+    - title: String
+    - description: String
+    - mediaType: MediaType
+    - releaseYear: int
+    - genres: List<Genre>
+    - ageRestriction: int
+
+    + getter()
+}
+
+class Rating {
+    - id: int
+    - userId: int
+    - mediaId: int
+    - value: int
+    - comment: String
+    - likes: int
+    - confirmed: boolean
+    - timeStamp: LocalDateTime
+
+    + getter()
+}
+
+class Favorite {
+    - userId: int
+    - mediaId: int
+
+    + getter()
+}
+
+class RatingLike {
+    - userId: int
+    - ratingId: int
+
+    + getter()
+}
+
+enum MediaType {
+    MOVIE
+    SERIES
+    GAME
+}
+
+enum Genre {
+    ACTION
+    ADVENTURE
+    COMEDY
+    FANTASY
+    HORROR
+    MYSTERY
+    ROMANCE
+    SCIFI
+}
+
+'Kardinalitäten und Beziehungen
+User "1" --> "*" Media : creates
+User "1" --> "*" Rating : writes
+Media "1" --> "*" Rating : receives
+
+User "1" --> "*" Favorite
+Media "1" --> "*" Favorite
+
+User "1" --> "*" RatingLike
+Rating "1" --> "*" RatingLike
+
+Media --> MediaType
+Media --> Genre
+
+@enduml
