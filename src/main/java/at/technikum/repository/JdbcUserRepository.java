@@ -2,41 +2,47 @@ package at.technikum.repository;
 
 import at.technikum.model.User;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import at.technikum.services.database.UnitOfWork;
+import at.technikum.services.database.DataAccessException;
+
 public class JdbcUserRepository implements UserRepository{
 
-    private final Connection connection;
-
-    public JdbcUserRepository(Connection connection) {
-        this.connection = connection;
-    }
-
     @Override
-    public void save(User user) {
-        String sql = "INSERT INTO users (username, password) values (?, ?)";
+    public User create(User user) {
+        String sql = "INSERT INTO users (username, password) values (?, ?) RETURNING id, username, password";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getPassword());
 
-            stmt.executeUpdate();
+            var rs = stmt.executeQuery();
+
+            if(rs.next()) {
+                User createdUser = new User(rs.getInt("id"), rs.getString("username"), rs.getString("password"));
+            
+                unitOfWork.commitTransaction();
+                return createdUser;
+            }
+
+            unitOfWork.rollbackTransaction();
+            return null;
         }
 
         catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Error creating user", e);
         }
     }
 
     @Override
-    public User findById(int id) {
+    public User readById(Integer id) {
         String sql = "SELECT * FROM users WHERE id = ?";
 
-        try(PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try(UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             stmt.setInt(1, id);
 
             var rs = stmt.executeQuery();
@@ -51,23 +57,28 @@ public class JdbcUserRepository implements UserRepository{
         }
 
         catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Error reading user", e);
         }
 
         return null;
     }
 
     @Override
-    public void delete(int id) {
+    public boolean deleteById(Integer id) {
         String sql = "DELETE FROM users WHERE id = ?";
 
-        try(PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try(UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = UnitOfWork.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            stmt.executeUpdate();
+
+            int affectedRows = stmt.executeUpdate();
+            
+            unitOfWork.commitTransaction();
+
+            return affectedRows > 0;
         }
 
         catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Error deleting user",e);
         }
     }
 
@@ -75,7 +86,7 @@ public class JdbcUserRepository implements UserRepository{
     public User findByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             stmt.setString(1, username);
 
             var rs = stmt.executeQuery();
@@ -89,18 +100,18 @@ public class JdbcUserRepository implements UserRepository{
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Error reading user by username",  e);
         }
 
         return null;
     }
 
     @Override
-    public List<User> findAll() {
+    public List<User> readAll() {
         String sql = "SELECT * FROM users";
         List<User> users = new ArrayList<>();
 
-        try(PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try(UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             var rs = stmt.executeQuery();
 
             while(rs.next()) {
@@ -113,9 +124,35 @@ public class JdbcUserRepository implements UserRepository{
         }
 
         catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Error reading users", e);
         }
 
         return users;
+    }
+
+    @Override
+    public User updateById(Integer id, User user) {
+        String sql = "UPDATE users SET username = ?, password = ? WHERE id = ? RETURNING id, username, password";
+
+        try(UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
+            stmt.setString(1, user.getUsername());
+            stmt.setString(2, user.getPassword());
+            stmt.setInt(3, id);
+
+            var rs = stmt.executeQuery();
+
+            if(rs.next()) {
+                User updateUser = new User(rs.getInt("id"), rs.getString("username"), rs.getString("password"));
+                unitOfWork.commitTransaction();
+                return updatedUser;
+            }
+
+            unitOfWork.rollbackTransaction();
+            return null;
+        }
+
+        catch(SQLException e) {
+            throw new DataAccessException("Error updating user", e);
+        }
     }
 }
