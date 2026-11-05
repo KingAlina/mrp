@@ -10,13 +10,13 @@ import java.util.List;
 import at.technikum.services.database.UnitOfWork;
 import at.technikum.services.database.DataAccessException;
 
-public class JdbcUserRepository implements UserRepository{
+public class JdbcUserRepository implements UserRepository {
 
     @Override
     public User create(User user) {
         String sql = "INSERT INTO users (username, password) values (?, ?) RETURNING id, username, password";
 
-        try (UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
+        try (UnitOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getPassword());
 
@@ -42,7 +42,7 @@ public class JdbcUserRepository implements UserRepository{
     public User readById(Integer id) {
         String sql = "SELECT * FROM users WHERE id = ?";
 
-        try(UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
+        try(UnitOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             stmt.setInt(1, id);
 
             var rs = stmt.executeQuery();
@@ -67,7 +67,7 @@ public class JdbcUserRepository implements UserRepository{
     public boolean deleteById(Integer id) {
         String sql = "DELETE FROM users WHERE id = ?";
 
-        try(UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = UnitOfWork.prepareStatement(sql)) {
+        try(UnitOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             stmt.setInt(1, id);
 
             int affectedRows = stmt.executeUpdate();
@@ -86,7 +86,7 @@ public class JdbcUserRepository implements UserRepository{
     public User findByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
 
-        try (UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
+        try (UnitOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             stmt.setString(1, username);
 
             var rs = stmt.executeQuery();
@@ -111,7 +111,7 @@ public class JdbcUserRepository implements UserRepository{
         String sql = "SELECT * FROM users";
         List<User> users = new ArrayList<>();
 
-        try(UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
+        try(UnitOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             var rs = stmt.executeQuery();
 
             while(rs.next()) {
@@ -134,7 +134,7 @@ public class JdbcUserRepository implements UserRepository{
     public User updateById(Integer id, User user) {
         String sql = "UPDATE users SET username = ?, password = ? WHERE id = ? RETURNING id, username, password";
 
-        try(UnifOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
+        try(UnitOfWork unitOfWork = new UnitOfWork(); PreparedStatement stmt = unitOfWork.prepareStatement(sql)) {
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getPassword());
             stmt.setInt(3, id);
@@ -142,7 +142,7 @@ public class JdbcUserRepository implements UserRepository{
             var rs = stmt.executeQuery();
 
             if(rs.next()) {
-                User updateUser = new User(rs.getInt("id"), rs.getString("username"), rs.getString("password"));
+                User updatedUser = new User(rs.getInt("id"), rs.getString("username"), rs.getString("password"));
                 unitOfWork.commitTransaction();
                 return updatedUser;
             }
