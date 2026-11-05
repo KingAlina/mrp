@@ -4,10 +4,7 @@ import at.technikum.model.User;
 
 import java.util.List;
 
-public interface UserRepository {
-    void save(User user);
-    User findById(int id);
+public interface UserRepository extends Repository<User, Integer> {
+    
     User findByUsername(String username);
-    void delete(int id);
-    List<User> findAll();
 }
