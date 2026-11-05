@@ -1,18 +1,14 @@
 package at.technikum.server;
 
-import at.technikum.dto.LoginRequest;
-import at.technikum.dto.RegisterRequest;
-import at.technikum.model.User;
-import at.technikum.repository.UserRepository;
 
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import at.technikum.model.Genre;
 import at.technikum.model.Media;
-import at.technikum.model.MediaType;
+import at.technikum.model.User;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
@@ -20,18 +16,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import at.technikum.dto.CreateMediaRequest;
+import at.technikum.repository.UserRepository;
+import at.technikum.repository.MediaRepository;
 
 
 public class Server {
 
     private final UserRepository userRepository;
+    private final MediaRepository mediaRepository;
 
     private final Map<String, Integer> tokens = new HashMap<>();
 
     // Constructor
-    public Server(UserRepository userRepository) {
+    public Server(UserRepository userRepository, MediaRepository mediaRepository) {
         this.userRepository = userRepository;
+        this.mediaRepository = mediaRepository;
     }
 
     public void start() throws IOException {
@@ -48,9 +47,19 @@ public class Server {
         // Create /media endpoint
         server.createContext("/media", exchange -> {
 
-            String token = exchange.getRequestHeaders().getFirst("Authorization");
+            String authorization = exchange.getRequestHeaders().getFirst("Authorization");
 
-            if (token == null || !tokens.containsKey(token)) {
+            if (authorization == null ||
+                    !authorization.startsWith("Bearer ")) {
+
+                exchange.sendResponseHeaders(401, -1);
+                exchange.close();
+                return;
+            }
+
+            String token = authorization.substring(7).trim();
+
+            if (!tokens.containsKey(token)) {
                 exchange.sendResponseHeaders(401, -1);
                 exchange.close();
                 return;
@@ -61,19 +70,10 @@ public class Server {
             // GET /media
             if (method.equals("GET")) {
 
-                // later from DB
-                Media media = new Media(
-                        1,
-                        "Interstellar",
-                        "Science-Fiction Film",
-                        MediaType.MOVIE,
-                        2014,
-                        List.of(Genre.SCIFI),
-                        12
-                );
+                List<Media> mediaList = mediaRepository.readAll();
 
                 // Java object -> JSON
-                String response = mapper.writeValueAsString(media);
+                String response = mapper.writeValueAsString(mediaList);
 
                 exchange.getResponseHeaders().set(
                         "Content-Type",
@@ -94,22 +94,14 @@ public class Server {
 
             // POST /media
             else if (method.equals("POST")) {
-                CreateMediaRequest request = mapper.readValue(
-                        exchange.getRequestBody(), CreateMediaRequest.class
-                );
 
-                Media media = new Media(
-                        request.getCreatorId(),
-                        request.getTitle(),
-                        request.getDescription(),
-                        request.getMediaType(),
-                        request.getReleaseYear(),
-                        request.getGenres(),
-                        request.getAgeRestriction()
-                );
+                Media media = mapper.readValue(exchange.getRequestBody(), Media.class);
+
+                // Save to DB
+                Media createdMedia = mediaRepository.create(media);
 
                 // Media object -> JSON
-                String response = mapper.writeValueAsString(media);
+                String response = mapper.writeValueAsString(createdMedia);
 
                 exchange.getResponseHeaders().set(
                         "Content-Type",
@@ -139,13 +131,9 @@ public class Server {
 
             if (method.equals("POST")) {
 
-                RegisterRequest request = mapper.readValue(
-                        exchange.getRequestBody(),
-                        RegisterRequest.class
-                );
+                User user = mapper.readValue(exchange.getRequestBody(), User.class);
 
-                User existingUser =
-                        userRepository.findByUsername(request.getUsername());
+                User existingUser = userRepository.findByUsername(user.getUsername());
 
                 if (existingUser != null) {
                     exchange.sendResponseHeaders(409, -1);
@@ -153,12 +141,7 @@ public class Server {
                     return;
                 }
 
-                User user = new User(
-                        request.getUsername(),
-                        request.getPassword()
-                );
-
-                userRepository.save(user);
+                userRepository.create(user);
 
                 exchange.sendResponseHeaders(201, -1);
                 exchange.close();
@@ -176,14 +159,9 @@ public class Server {
 
             if (method.equals("POST")) {
 
-                LoginRequest request = mapper.readValue(
-                        exchange.getRequestBody(),
-                        LoginRequest.class
-                );
+                User loginUser = mapper.readValue(exchange.getRequestBody(), User.class);
 
-                User user = userRepository.findByUsername(
-                        request.getUsername()
-                );
+                User user = userRepository.findByUsername(loginUser.getUsername());
 
                 if (user == null) {
                     exchange.sendResponseHeaders(401, -1);
@@ -191,7 +169,7 @@ public class Server {
                     return;
                 }
 
-                if (!user.getPassword().equals(request.getPassword())) {
+                if (!user.getPassword().equals(loginUser.getPassword())) {
                     exchange.sendResponseHeaders(401, -1);
                     exchange.close();
                     return;

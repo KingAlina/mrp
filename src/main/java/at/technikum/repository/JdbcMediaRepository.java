@@ -155,7 +155,7 @@ public class JdbcMediaRepository implements MediaRepository {
         }
     }
 
-    @Overrice
+    @Override
     public boolean deleteById(Integer id) {
         String sql = "DELETE FROM media WHERE id = ?";
 
@@ -168,7 +168,7 @@ public class JdbcMediaRepository implements MediaRepository {
         }
 
         catch(SQLException e) {
-            throw new DataAccessException("Error deleting media",  e),
+            throw new DataAccessException("Error deleting media",  e);
         }
     }
 }

@@ -7,7 +7,7 @@ import at.technikum.repository.JdbcMediaRepository;
 import at.technikum.repository.JdbcUserRepository;
 import at.technikum.repository.MediaRepository;
 import at.technikum.repository.UserRepository;
-import at.technikum.server.Server
+import at.technikum.server.Server;
 
 public class Main {
 
