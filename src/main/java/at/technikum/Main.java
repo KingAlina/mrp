@@ -1,6 +1,3 @@
-// mit ALLEN Befehlen für Datenbank abgeben
-// dto?
-
 package at.technikum;
 
 import at.technikum.repository.JdbcMediaRepository;

@@ -30,7 +30,6 @@ public class User {
         return username;
     }
 
-    // soll ich den weglassen??
     public String getPassword() {
         return password;
     }
