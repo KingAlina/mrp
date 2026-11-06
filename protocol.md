@@ -283,7 +283,6 @@ JSON response
 
 `User` and `Media` contain no-argument constructors and setters so that Jackson can deserialize incoming JSON directly into model objects.
 
-Separate DTO classes were not used in the final intermediate implementation.
 
 ---
 
@@ -457,17 +456,7 @@ Successful deletion         -> 204 No Content
 
 ## 8. Test Coverage
 
-### 8.1 Automated Unit Tests
-
-The intermediate implementation currently does not contain a dedicated JUnit unit test suite.
-
-The main focus during this intermediate stage was functional and integration testing of the complete REST flow using curl together with a real PostgreSQL database.
-
-Automated unit tests should be extended in the final version, especially for repository behavior and business logic that will be introduced with ratings, favorites, filtering and recommendations.
-
----
-
-### 8.2 Functional and Integration Testing
+### 8.1 Functional and Integration Testing
 
 The project contains:
 
@@ -504,7 +493,7 @@ and the final intermediate build completed successfully.
 
 ---
 
-### 8.3 Why These Cases Were Tested
+### 8.2 Why These Cases Were Tested
 
 Authentication was tested because all media operations depend on the validity of the Bearer token.
 
@@ -726,45 +715,5 @@ The following values are estimates because development was completed incremental
 The values are approximate and are intended to document the relative effort spent on the main parts of the project.
 
 ---
-
-## 11. Git History
-
-Git and GitHub were used throughout development.
-
-The repository contains the development history with individual commits for the implemented steps and fixes.
-
-Because the Git history is considered part of the project documentation, individual commits are not duplicated in this protocol.
-
-The repository is available at:
-
-```text
-https://github.com/KingAlina/mrp
-```
-
----
-
-## 12. Current Intermediate Status
-
-The intermediate version successfully provides the required technical foundation:
-
-- Java REST server
-- HTTP routing
-- JSON request and response handling
-- PostgreSQL persistence
-- PostgreSQL running in Docker
-- Repository pattern
-- UnitOfWork transaction handling
-- Prepared statements
-- User registration
-- User login
-- Bearer token authentication
-- Media CRUD
-- Ownership authorization
-- Multiple genres per media
-- Database seed script
-- curl API test script
-- Maven build
-- Git history
-- README documentation
 
 The next development stage can build on this architecture to implement the remaining final-version functionality such as ratings, favorites, filtering, recommendations and leaderboard features.
