@@ -65,10 +65,11 @@ public class Server {
                 return;
             }
 
+            String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
 
             // GET /media
-            if (method.equals("GET")) {
+            if (method.equals("GET") && path.equals("/media")) {
 
                 List<Media> mediaList = mediaRepository.readAll();
 
@@ -90,12 +91,57 @@ public class Server {
                 );
 
                 exchange.getResponseBody().close();
+            } 
+            // GET /media/{id}
+            else if (method.equals("GET") && path.startsWith("/media/")) {
+                
+                String idPart = path.substring("/media/".length());
+                
+                int id;
+
+                try {
+                    id = Integer.parseInt(idPart);
+                }
+                catch (NumberFormatException e) {
+                    exchange.sendResponseHeaders(400, -1);
+                    exchange.close();
+                    return;
+                }
+
+                Media media = mediaRepository.readById(id);
+
+                if(media == null) {
+                    exchange.sendResponseHeaders(404, -1);
+                    exchange.close();
+                    return;
+                }
+
+                String response = mapper.writeValueAsString(media);
+
+                exchange.getResponseHeaders().set(
+                        "Content-Type",
+                        "application/json; charset=UTF-8"
+                );
+
+                exchange.sendResponseHeaders(
+                    200,
+                    response.getBytes().length
+                );
+
+                exchange.getResponseBody().write(
+                        response.getBytes()
+                );
+
+                exchange.getResponseBody().close();
             }
 
             // POST /media
-            else if (method.equals("POST")) {
+            else if (method.equals("POST") && path.equals("/media")) {
 
                 Media media = mapper.readValue(exchange.getRequestBody(), Media.class);
+
+                int currentUserId = tokens.get(token);
+                media.setCreatorId(currentUserId);
 
                 // Save to DB
                 Media createdMedia = mediaRepository.create(media);
@@ -118,7 +164,113 @@ public class Server {
                 );
 
                 exchange.getResponseBody().close();
-            } else {
+            } 
+
+            // PUT /media
+            else if (method.equals("PUT") && path.startsWith("/media/")) {
+
+                String idPart = path.substring("/media/".length());
+                
+                int id;
+
+                try {
+                    id = Integer.parseInt(idPart);
+                }
+                catch (NumberFormatException e) {
+                    exchange.sendResponseHeaders(400, -1);
+                    exchange.close();
+                    return;
+                }
+
+                Media existingMedia = mediaRepository.readById(id);
+
+                if (existingMedia == null) {
+                    exchange.sendResponseHeaders(404, -1);
+                    exchange.close();
+                    return;
+                }
+
+                int currentUserId = tokens.get(token);
+
+                if (existingMedia.getCreatorId() != currentUserId) {
+                    exchange.sendResponseHeaders(403, -1);
+                    exchange.close();
+                    return;
+                }
+
+                Media updatedData = mapper.readValue(
+                    exchange.getRequestBody(),
+                    Media.class
+                );
+
+                updatedData.setCreatorId(currentUserId);
+
+                Media updatedMedia = mediaRepository.updateById(id, updatedData);
+
+                String response = mapper.writeValueAsString(updatedMedia);
+
+                exchange.getResponseHeaders().set(
+                    "Content-Type",
+                    "application/json; charset=UTF-8"
+                );
+
+                exchange.sendResponseHeaders(
+                    200,
+                    response.getBytes().length
+                );
+
+                exchange.getResponseBody().write(
+                    response.getBytes()
+                );
+
+                exchange.getResponseBody().close();
+            }
+
+            // DELETE /media
+            else if (method.equals("DELETE") && path.startsWith("/media/")) {
+
+                String idPart = path.substring("/media/".length());
+                
+                int id;
+
+                try {
+                    id = Integer.parseInt(idPart);
+                }
+                catch (NumberFormatException e) {
+                    exchange.sendResponseHeaders(400, -1);
+                    exchange.close();
+                    return;
+                }
+
+                Media existingMedia = mediaRepository.readById(id);
+
+                if (existingMedia == null) {
+                    exchange.sendResponseHeaders(404, -1);
+                    exchange.close();
+                    return;
+                }
+
+                int currentUserId = tokens.get(token);
+
+                if (existingMedia.getCreatorId() != currentUserId) {
+                    exchange.sendResponseHeaders(403, -1);
+                    exchange.close();
+                    return;
+                }
+
+                boolean deleted = mediaRepository.deleteById(id);
+
+                if (deleted) {
+                    exchange.sendResponseHeaders(204, -1);
+                }
+                else {
+                    exchange.sendResponseHeaders(404, -1);
+                }
+
+                exchange.close();
+            }
+            
+            else {
                 exchange.sendResponseHeaders(405, -1);
                 exchange.close();
             }
