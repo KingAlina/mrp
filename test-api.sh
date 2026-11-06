@@ -24,7 +24,7 @@ echo "Token: $TOKEN"
 echo
 echo "=== CREATE MEDIA ==="
 
-curl -i -X POST "$BASE_URL/media" \
+CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/media" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -34,7 +34,13 @@ curl -i -X POST "$BASE_URL/media" \
     "releaseYear":2014,
     "genres":["SCIFI","ADVENTURE"],
     "ageRestriction":12
-  }'
+  }')
+
+echo "$CREATE_RESPONSE"
+
+MEDIA_ID=$(echo "$CREATE_RESPONSE" | sed -E 's/.*"id":([0-9]+).*/\1/')
+
+echo "Created Media ID: $MEDIA_ID"
 
 echo
 echo "=== GET ALL MEDIA ==="
@@ -43,15 +49,15 @@ curl -i -X GET "$BASE_URL/media" \
   -H "Authorization: Bearer $TOKEN"
 
 echo
-echo "=== GET MEDIA 1 ==="
+echo "=== GET CREATED MEDIA ==="
 
-curl -i -X GET "$BASE_URL/media/1" \
+curl -i -X GET "$BASE_URL/media/$MEDIA_ID" \
   -H "Authorization: Bearer $TOKEN"
 
 echo
-echo "=== UPDATE MEDIA 1 ==="
+echo "=== UPDATE CREATED MEDIA ==="
 
-curl -i -X PUT "$BASE_URL/media/1" \
+curl -i -X PUT "$BASE_URL/media/$MEDIA_ID" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -64,9 +70,9 @@ curl -i -X PUT "$BASE_URL/media/1" \
   }'
 
 echo
-echo "=== DELETE MEDIA 1 ==="
+echo "=== DELETE CREATED MEDIA ==="
 
-curl -i -X DELETE "$BASE_URL/media/1" \
+curl -i -X DELETE "$BASE_URL/media/$MEDIA_ID" \
   -H "Authorization: Bearer $TOKEN"
 
 echo
